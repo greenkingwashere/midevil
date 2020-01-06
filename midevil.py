@@ -25,29 +25,32 @@ tinyFont = pygame.font.Font("asset\\font\\console.ttf", 18)
 
 
 class image:
-    images = {None:pygame.image.load("asset\\image\\none.png")}
+    """Class that handles images by keeping imported images in a dictionary so that do not have to be imported more than once."""
+    images = {None:pygame.image.load("asset\\image\\none.png")} #start with the "null" image already imported
     def get(name):
+        """Either returns the image if it has already been imported, or import it if it has not."""
         pic = image.images.get(name)
         if (pic == None):
             try:
                 pic = pygame.image.load("asset\\image\\"+name+".png")
                 image.images[name] = pic
-            except Exception:
-                #add error message here
+            except Exception: #maybe should be more specific?
                 return image.images.get(None)
         return pic
     def blit(name, x, y, width=50, height=50):
+        """renders an image."""
         try:
             screen.blit(pygame.transform.scale(name, (width, height)), [x,y])
         except TypeError:
             screen.blit(pygame.transform.scale(image.get(name), (width, height)), [x,y])
     def reverse(picture):
+        """Switches the order in the dictionary."""
         temp = {v: k for k, v in image.images.items()}
         return temp[picture]
 
 
 class item:
-
+    """Handles items in player inventories."""
     def __init__(self, name, type, rarity=0, picture=None, value=0, strength=0, speed=0, evasion=0, power=0, will=0, luck=0, armor=0, maxHealth=0, maxMana=0):
         """ADD MORE STATS HERE LATER"""
         self.name = name
@@ -66,12 +69,13 @@ class item:
         self.maxMana = maxMana
 
     def getStats(self):
+        """Get list of stats"""
         return [self.strength, self.speed, self.evasion, self.power, self.will, self.luck, self.armor, self.maxHealth, self.maxMana]
 
     
     def renderItem(self, x=0, y=0):
-        """render item for inventory"""
-        total = 55
+        """Render item for inventory as a toolbox, includes stats and other information."""
+        total = 55 #this is used for calculating how big the final box should be
         for i in self.getStats():
             if (i != 0):
                 total += 15
@@ -154,7 +158,8 @@ class item:
 
 
 class player:
-    """Stats: Strength, Speed, Evasion, Power, Will, Luck, HP, Mana"""
+    """Information about the player.
+    Stats: Strength, Speed, Evasion, Power, Will, Luck, HP, Mana"""
     x = 100
     y = 100
     pos = [2,2]
@@ -169,7 +174,7 @@ class player:
     moveRate = 1 #has to be divisable by 50?
     prevMove = 0
     staticMove = False
-    inventory = [None, None, None, None,None, None, None, None,None, None, None, None,None, None, None, None]
+    inventory = [None, None, None, None,None, None, None, None,None, None, None, None,None, None, None, None] #None is empty slot
     equip = [None, None, None, None]
 
     strength = 5
@@ -195,17 +200,19 @@ class player:
             player.health = player.maxHealth
 
     def findItem(ghost):
+        """Attempt to add item to inventory. Returns false if that can't happen."""
         if player.inventoryFull():
             dialog.infoBox("Can't pick up "+ghost.name+", inventory is full.")
             return False
         else:
-            for i in range(0,len(player.inventory)):#THIS MAY BE WRONG
+            for i in range(0,len(player.inventory)): #find an empty slot
                 if player.inventory[i] == None:
                     player.inventory[i] = copy.copy(ghost)
                     dialog.infoBox("Got the "+ghost.name+"!",ghost.picture)
                     return True
 
     def inventoryFull():
+        """Returns true if inventory is full."""
         for i in player.inventory:
             if i == None:
                 return False
@@ -298,7 +305,7 @@ class player:
 
 
     def update():
-
+        """Called every tick. Moves the player, updates everything about them."""
         if (not player.staticMove):
             try:
                 averageFPS = sum(pastFrameRates[50:-1])/len(pastFrameRates[50:-1])
@@ -453,7 +460,7 @@ class player:
 
 
 class block:
-    
+    """Info about blocks (tiles)."""
     
     def __init__(self, picture, collision=False, teleport=None, x=0, y=0, action=None):
         """initialize the block. picture is a string."""
@@ -468,6 +475,8 @@ class block:
 
 
 class map:
+    """Collection of blocks into a map."""
+    
     current = None
     maps = {}
     def __init__(self, name, blocks):
@@ -553,7 +562,7 @@ class map:
             ghost.append(timmy)
         return map("blank",ghost)
     def hover():
-        """returns what block the cursor is hovering over"""
+        """returns what block the cursor is hovering over."""
         try:
             for i in range(0,13):
                 for j in range(0,13):
@@ -600,8 +609,11 @@ class console:
 
         try:
             if (ghost[0] == "help"):
-                console.add("get [variable]: shows the specified value.")
-                console.add("exec [command]: executes any command. Use carefully!")
+                if (ghost[1] == "all"):
+                    console.add("get [variable]: shows the specified value.")
+                    console.add("exec [command]: executes any command. Use carefully!")
+                else:
+                    console.add(eval(ghost[1]+".__doc__"))
             elif (ghost[0] == "teleport" or ghost[0] == "tp"):
                 player.pos[0] += int(ghost[1])
                 player.pos[1] += int(ghost[2])
@@ -1059,6 +1071,7 @@ def sign1():
     
 
 def render():
+    """Main rendering super function."""
     screen.fill([0,0,0])
 
     map.blit(map.current)
