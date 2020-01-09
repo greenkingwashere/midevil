@@ -19,7 +19,7 @@ tinyFont = pygame.font.Font("asset\\font\\console.ttf", 18)
 
 
 
-
+VERSION = 1.01
 
 
 
@@ -1196,7 +1196,8 @@ debug = False
 
 running = True
 
-mode = "game"
+mode = "logo"
+menuTick = 0
 
 FRAMERATE = 120
 pastFrameRates = [0]
@@ -1238,7 +1239,8 @@ tandoor = block("tandoor", True, "fountain")
 
 map.current = map.get("town")
 
-
+menuColors = [False,False,False,False,False]
+menuKey = {False:[0,0,0],True:[200,0,0]}
 
 
 
@@ -1250,9 +1252,63 @@ clock = pygame.time.Clock()
 while running:
     
     #menu here
+    while mode == "logo":
+        screen.fill([0,0,0])
+        image.blit("randint",50,150,550,300)
+        pygame.display.flip()
+        menuTick += 1
+        
+        if (menuTick > 300):
+            mode = "menu"
+            menuTick = 0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+    while mode == "menu":
+        screen.fill([0,0,0])
+        for i in range(0,14):
+            for j in range(0,14):
+                image.blit("tanbrick",(i*50-50)+menuTick,(j*50-50)+menuTick,50,50)
+        image.blit("midevil",125,50,400,100)
 
 
+        screen.blit(textfont.render("Continue",True,menuKey[menuColors[0]]),[250,250])
+        screen.blit(textfont.render("New Game",True,menuKey[menuColors[1]]),[230,300])
+        screen.blit(textfont.render("News",True,menuKey[menuColors[2]]),[260,350])
+        screen.blit(textfont.render("Option",True,menuKey[menuColors[3]]),[255,400])
+        screen.blit(textfont.render("Quit",True,menuKey[menuColors[4]]),[270,450])
 
+        menuColors = [False,False,False,False,False]
+        if (collides(250,250,150,50)):
+            menuColors[0] = True
+        if (collides(230,300,200,50)):
+            menuColors[1] = True
+        if (collides(260,350,75,50)):
+            menuColors[2] = True
+        if (collides(255,400,75,50)):
+            menuColors[3] = True
+        if (collides(270,450,65,50)):
+            menuColors[4] = True
+
+        screen.blit(tinyFont.render("Midevil version "+str(VERSION),True,[0,0,0]),[10,630])
+        menuTick += 1
+        if (menuTick >=49):
+            menuTick = 0
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if (collides(250,250,150,50)):
+                    pass
+                if (collides(230,300,200,50)):
+                    mode = "game"
+                if (collides(260,350,75,50)):
+                    pass
+                if (collides(255,400,75,50)):
+                    pass
+                if (collides(270,450,65,50)):
+                    exit()
 
 
 
