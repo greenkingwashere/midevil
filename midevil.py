@@ -194,6 +194,8 @@ class player:
     experience = 0
     level = 1
 
+    ENCOUNTERRATE = 10
+
     def heal(ghost):
         player.health += ghost
         if player.health > player.maxHealth:
@@ -320,21 +322,25 @@ class player:
             if (player.y <= player.prevMove -50 ):
                 player.moving = None
                 player.y = player.prevMove - 50
+                player.checkForEncounter()
         if (player.moving == "down"):
             player.y += player.moveRate
             if (player.y >= player.prevMove + 50):
                 player.moving = None
                 player.y = player.prevMove + 50
+                player.checkForEncounter()
         if (player.moving == "left"):
             player.x -= player.moveRate
             if (player.x <= player.prevMove -50 ):
                 player.moving = None
                 player.x = player.prevMove - 50
+                player.checkForEncounter()
         if (player.moving == "right"):
             player.x += player.moveRate
             if (player.x >= player.prevMove + 50):
                 player.moving = None
                 player.x = player.prevMove + 50
+                player.checkForEncounter()
 
     def canMoveUp():
         try:
@@ -454,6 +460,42 @@ class player:
                 map.current.blocks[player.pos[0]+1][player.pos[1]].action()
         except:
             pass
+    def checkForEncounter():
+        if (random.randint(1,player.ENCOUNTERRATE) == 1):
+            ghost = encounterID[map.current.blocks[player.pos[0]][player.pos[1]].encounter][random.randint(0,2)]
+            if (ghost != None):
+                battle(ghost)
+        
+
+
+
+
+class enemy:
+    """enemies and their stats
+    Stats: Strength, Speed, Evasion, Power, Will, Luck, HP, Mana"""
+
+    def __init__(self, name, picture, level, strength, speed, evasion, power, will, hp, mana):
+        self.name = name
+        self.picture = picture
+        self.level = level
+        self.strength = strength
+        self.speed = speed
+        self.evasion = evasion
+        self.power = power
+        self.will = will
+        self.maxHp = hp
+        self.hp = hp
+        self.maxMana = mana
+        self.mana = mana
+
+    def loseHealth(self, ghost):
+        self.hp -= ghost
+        if self.hp < 0:
+            self.hp = 0
+    def heal(self, ghost):
+        self.hp += ghost
+        if self.hp > self.maxHp:
+            self.hp = self.maxHp
 
 
 
@@ -462,7 +504,7 @@ class player:
 class block:
     """Info about blocks (tiles)."""
     
-    def __init__(self, picture, collision=False, teleport=None, x=0, y=0, action=None):
+    def __init__(self, picture, collision=False, teleport=None, x=0, y=0, action=None, encounter = -1):
         """initialize the block. picture is a string."""
         self.picture = image.get(picture)
         self.collision = collision
@@ -470,6 +512,7 @@ class block:
         self.x = x
         self.y = y
         self.action = action
+        self.encounter = encounter
     
 
 
@@ -495,6 +538,29 @@ class map:
                 ghost = None
         return ghost
     
+    
+    #def isOnScreen(self, x, y):
+        #"""Returns if the specefied index is visible. Allows blocks that are on the border of the screen (so 1 off the screen) as well for rendering reasons"""
+        
+        #first see if the block exists
+        #try:
+            #if (self.blocks[x][y] == None):
+                #return "dummy1"
+        #except IndexError:
+            #return "dummy2"
+        #if it does, look at player pos
+        #print("0")
+        #if (x+player.pos[0]-7 <= 0):
+           #print("1")
+           #if (x+player.pos[0]+7 <= 10):
+              #print("2")
+              #if (y+player.pos[1]-7 <= 0):
+                 #print("3")
+                 #if (y+player.pos[1]+7 <= 10):
+                    #return "true"
+        #return "bad"
+    
+
     def blit(self):
         global debug
         if (self != None): #if the player is on a map....
@@ -592,7 +658,7 @@ class console:
         for i in range(0,console.limit):
             try:
                 screen.blit(consolefont.render(console.log[i] , True, console.color), [10,(i*32)+37])
-            except IndexError:
+            except Exception:
                 pass
     def add(value):
         
@@ -627,7 +693,7 @@ class console:
             elif (ghost[0] == "random"):
                 console.add(str(random.randint(int(ghost[1]), int(ghost[2]))))
             elif (ghost[0] == "exec" or ghost[0] == "execute"):
-                temp = exec(dummy[1])
+                temp = exec(dummy[1], globals())
                 if (temp != None):
                     console.add(str(temp))
             elif (ghost[0] == "get"):
@@ -644,7 +710,6 @@ class console:
                 console.clear()
             elif (ghost[0] == "select"):
                 exec("player.select = "+dummy[1])
-                #print(dummy)
             elif(ghost[0] == "noclip"):
                 player.noclip = not player.noclip
                 console.add("noclip is "+str(player.noclip))
@@ -746,6 +811,8 @@ class dialog:
                 
             
     def renderInventory(grabbed):
+        screen.fill([0,0,0])
+
         pygame.draw.rect(screen, [255, 240, 199], [50, 50, 525, 325])
         pygame.draw.rect(screen, [44, 100, 76], [50, 50, 525, 325], 4)
         tick = 0
@@ -811,7 +878,7 @@ class dialog:
         tick = 0
         arrow = 1
         while True:
-            render()
+            #render()
             
             pygame.time.delay(5)
             tick += 1
@@ -819,7 +886,7 @@ class dialog:
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
                         arrow -= 1
@@ -844,12 +911,12 @@ class dialog:
         lion = True
         selected = None
         while lion:
-            render()
+            #render()
             dialog.renderInventory(selected)
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_e and selected == None:
                         lion = False
@@ -916,7 +983,7 @@ class dialog:
         tick = 0
         arrow = True
         while True:
-            render()
+            #render()
             pygame.time.delay(5)
             tick += 1
             dialog.renderInput(text, tick, arrow)
@@ -924,7 +991,7 @@ class dialog:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         if (tick < len(text)):
@@ -943,7 +1010,7 @@ class dialog:
         beast = True
         tick = 0
         while beast:
-            render()
+            #render()
             pygame.time.delay(5)
             tick += 1
             dialog.renderInfo(text, tick, ghost)
@@ -951,7 +1018,7 @@ class dialog:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         if (tick < len(text)):
@@ -1074,7 +1141,8 @@ def render():
     """Main rendering super function."""
     screen.fill([0,0,0])
 
-    map.blit(map.current)
+    if (renderMap):
+        map.blit(map.current)
 
     image.blit(player.picture, 300,300,50,50)
 
@@ -1134,7 +1202,7 @@ def boxTransition(delay=500):
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    sys.exit(0)
     pygame.time.wait(delay)
     #add slide in
 def wipeTransitionOut(speed=10):
@@ -1147,7 +1215,7 @@ def wipeTransitionOut(speed=10):
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                sys.exit(0)
 def wipeTransitionIn(speed=10):
     num = 650
     while (num > 0):
@@ -1158,7 +1226,7 @@ def wipeTransitionIn(speed=10):
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                sys.exit(0)
 def wipeTransition(speed=10, delay=0):
     wipeTransitionOut(speed)
     pygame.time.delay(delay)
@@ -1191,6 +1259,60 @@ def drawFPSGraph(x, y):
 
 
 
+def renderBattle(hostile):
+    screen.fill([255,255,255])
+
+    
+    image.blit("battleIsland", 225, 150, 200, 50) #enemy
+    image.blit(hostile.picture, 300,125,50,50)
+    pygame.display.flip()
+
+
+def battle(hostile):
+
+    fighting = True
+    """Battle an enemy!"""
+
+    #transition out/in?
+
+
+
+    renderBattle(hostile)
+    dialog.infoBox("A "+hostile.name+" appeared!")
+
+    while fighting:
+        renderBattle(hostile)
+        choice = dialog.choiceBox("What to do?","Fight","Item","Spell","Run")
+        renderBattle(hostile)
+
+        if (choice == 1): #fight
+            dialog.infoBox("Attacked!")
+        elif (choice == 2):#item
+            dialog.inventory()
+        elif (choice == 3):#spell
+            dialog.infoBox("Cast spell!")
+        elif (choice == 4):#run
+            dialog.infoBox("Ran away!")
+            fighting = False
+
+
+
+
+    
+   
+
+
+        
+
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit(0)
+        
+
+
+
+
 
 debug = False
 
@@ -1203,13 +1325,46 @@ FRAMERATE = 120
 pastFrameRates = [0]
 
 
+
+
+
+# ============================= PRE DEFINED DATA =========================================
+
+
+
+
+# ---blocks-----
 tanbrick = block("tanbrick", True)
 graybrick = block("graybrick", True)
 grass = block("grass", False)
 water = block("water", True)
 tandoor = block("tandoor", True, "fountain")
+slimeGrass = block("grass",False,None,50,50,None,1)
+
+# -----enemies-------
+blueSlime = enemy("Blue Slime", None, 1, 3, 2, 2, 1, 1, 6, 0)
+orangeSlime = enemy("Orange Slime", None, 2, 4, 3, 2, 1, 1, 8, 0)
 
 
+
+#---------- encounter ids -----------
+encounterID = {
+    -1:[None, None, None],
+    0:[copy.copy(blueSlime),None,None],
+    1:[copy.copy(blueSlime),copy.copy(blueSlime),copy.copy(orangeSlime)]
+    
+}
+
+
+
+
+
+
+#=========================== PRE DEFINED DATA ====================================================
+
+
+
+renderMap = True
 
 
 
@@ -1263,7 +1418,7 @@ while running:
             menuTick = 0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                sys.exit(0)
     while mode == "menu":
         screen.fill([0,0,0])
         for i in range(0,14):
@@ -1297,7 +1452,7 @@ while running:
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                sys.exit(0)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if (collides(250,250,150,50)):
                     pass
@@ -1308,7 +1463,7 @@ while running:
                 if (collides(255,400,75,50)):
                     pass
                 if (collides(270,450,65,50)):
-                    exit()
+                    sys.exit(0)
 
 
 
@@ -1347,7 +1502,7 @@ while running:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                exit()
+                sys.exit(0)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if (player.select != None and player.moving == None and map.hover() != None and debug and event.button == 1):
                     try:
